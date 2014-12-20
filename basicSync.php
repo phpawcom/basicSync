@@ -6,6 +6,7 @@
 *                   http://www.alrashdi.co  |  https://github.com/phpawcom      *
 *  Note: Make a backup for your databases before starting the synchronization   *
 *********************************************************************************/
+
 $db1 = new db('localhost', 'root', 'root', 'test_cs_in', ''); // Main Database
 $db2 = new db('localhost', 'root', 'root', 'test_cs_in2', '');  // Another Database
 $sync = new sync($db1, $db2);
