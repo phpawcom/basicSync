@@ -1,4 +1,3 @@
-
 CREATE TABLE IF NOT EXISTS `synchronization` (
   `syncid` int(11) NOT NULL AUTO_INCREMENT,
   `table_name` varchar(255) NOT NULL,
