@@ -1,14 +1,13 @@
 <?php
 /********************************************************************************
 *                             Basic Synchronization Script                      *
-*                                   version: beta 1                             *
+*                                   version: beta 2                             *
 *                             Written By Abdulaziz Al Rashdi                    *
 *                   http://www.alrashdi.co  |  https://github.com/phpawcom      *
 *  Note: Make a backup for your databases before starting the synchronization   *
 *********************************************************************************/
-
-$db1 = new db('localhost', 'root', 'root', 'test_cs_in', ''); // Main Database
-$db2 = new db('localhost', 'root', 'root', 'test_cs_in2', '');  // Another Database
+$db1 = new db('server', 'username', 'password', 'database name', ''); // Main Database
+$db2 = new db('server', 'username', 'password', 'database name', '');  // Another Database
 $sync = new sync($db1, $db2);
 
 ## Don't change below ##
@@ -31,52 +30,29 @@ class sync {
 	private function prepare_newer_date(){
 		$this->databases[1]->query('select * from #prefix#synchronization', 'tables');
 		while($row = $this->databases[1]->fetch_array('tables')):
-		  $this->copyTo($row['table_name'], $row['primarykey'], $row['lastkey_out']);
-		  $this->copyFrom($row['table_name'], $row['primarykey'], $row['lastkey_in']);
+		  $this->insertData($row['table_name'], $row['primarykey'], $row['lastkey_out'], (int) 1);
+		  $this->insertData($row['table_name'], $row['primarykey'], $row['lastkey_in'], (int) 0);
 		endwhile;
 	}
-	private function copyTo($table, $keyName, $keyValue){
-		//echo 'copyTo: '.$table.'.'.$keyName.' = '.$keyValue."<br />\n";
-		$this->databases[1]->query('select * from #prefix#'.$table.' where '.$keyName.' > '.$keyValue.' order by '.$keyName.' ASC');
-		while($field = $this->databases[1]->fetch_fields()):
+	private function insertData($table, $keyName, $keyValue, $db){
+		$this->databases[$db]->query('select * from #prefix#'.$table.' where '.$keyName.' > '.$keyValue.' order by '.$keyName.' ASC');
+		while($field = $this->databases[$db]->fetch_fields()):
 		  if($field->name == $keyName) continue;
 		  array_push($this->fields, $field->name);
 		endwhile;
-		while($row = $this->databases[1]->fetch_array()):
-		  $temporary = 'insert into '.$this->dbTest[1].'#prefix#'.$table.' set ';
+		while($row = $this->databases[$db]->fetch_array()):
+		  $temporary = 'insert into '.$this->dbTest[$db].'#prefix#'.$table.' set ';
 		  foreach($this->fields as $field):
 		    $temporary .= $field.' = \''.$row[$field].'\', ';
 		  endforeach;
 		  $temporary = substr($temporary, 0, -2);
-		  array_push($this->temporary, array('db' => '0', 'table' => $this->dbTest[1].$table, 'pk' => $keyName, 'pkv' => $row[$keyName], 'query' => $temporary));
-		endwhile;
-		$this->fields = array();
-	}
-	private function copyFrom($table, $keyName, $keyValue){
-		//echo 'copyFrom: '.$table.'.'.$keyName.' = '.$keyValue."<br />\n";
-		$this->databases[0]->query('select * from #prefix#'.$table.' where '.$keyName.' > '.$keyValue.' order by '.$keyName.' ASC');
-		while($field = $this->databases[0]->fetch_fields()):
-		  if($field->name == $keyName) continue;
-		  array_push($this->fields, $field->name);
-		endwhile;
-		while($row = $this->databases[0]->fetch_array()):
-		  $temporary = 'insert into '.$this->dbTest[0].'#prefix#'.$table.' set ';
-		  foreach($this->fields as $field):
-		    $temporary .= $field.' = \''.$row[$field].'\', ';
-		  endforeach;
-		  $temporary = substr($temporary, 0, -2);
-		  array_push($this->temporary, array('db' => '1', 'table' => $this->dbTest[0].$table, 'pk' => $keyName, 'pkv' => $row[$keyName], 'query' => $temporary));
+		  array_push($this->temporary, array('db' => '0', 'table' => $this->dbTest[$db].$table, 'pk' => $keyName, 'pkv' => $row[$keyName], 'query' => $temporary));
 		endwhile;
 		$this->fields = array();
 	}
 	private function execute_queries(){
 		foreach($this->temporary as $row):
 		 $this->databases[$row['db']]->query($row['query']);
-		 if($row['db'] == 0):
-		   $this->lastKey[$row['table']]['out'] = $this->databases[$row['db']]->insert_id();
-		 else:
-		   $this->lastKey[$row['table']]['in'] = $this->databases[$row['db']]->insert_id();
-		 endif;
 		endforeach;
 		$this->databases[1]->query('select * from #prefix#synchronization', 'tables');
 		while($row = $this->databases[1]->fetch_array('tables')):
@@ -164,6 +140,4 @@ class db extends sync {
 		return $queryid->fetch_field();
 	}
 }
-
-
 ?>
