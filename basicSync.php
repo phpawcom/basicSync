@@ -46,7 +46,7 @@ class sync {
 		    $temporary .= $field.' = \''.$row[$field].'\', ';
 		  endforeach;
 		  $temporary = substr($temporary, 0, -2);
-		  array_push($this->temporary, array('db' => '0', 'table' => $this->dbTest[$db].$table, 'pk' => $keyName, 'pkv' => $row[$keyName], 'query' => $temporary));
+		  array_push($this->temporary, array('db' => ($db == 1? '0' : '1'), 'table' => $this->dbTest[$db].$table, 'pk' => $keyName, 'pkv' => $row[$keyName], 'query' => $temporary));
 		endwhile;
 		$this->fields = array();
 	}
