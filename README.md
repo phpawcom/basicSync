@@ -16,5 +16,5 @@ $sync = new sync($db1, $db2);
 
 ##### Notes
 - The script does not check for duplicated records
-- There should me just 1 main database
+- There should be just 1 main database
 - This is  a beta version
